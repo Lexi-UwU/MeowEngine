@@ -143,6 +143,9 @@ int main() {
     int sdfCountLocation = glGetUniformLocation(shaderProgram, "sdf_count");    
     
     
+    int playerPosLocation = glGetUniformLocation(shaderProgram, "player_pos");    
+    
+    
     
     
     
@@ -155,6 +158,9 @@ int main() {
     };
     
     
+    float player_pos[] = {0.0f,0.0f,0.0f}; //TODO: Replace with struct
+    
+    
     
 
     // 6. Main Render Loop
@@ -162,7 +168,23 @@ int main() {
         // Input
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
             glfwSetWindowShouldClose(window, 1);
-  }
+        }
+        
+          if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
+            player_pos[2] += 0.1;
+        }
+                  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+            player_pos[2] -= 0.1;
+        }
+        
+                  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+            player_pos[0] -= 0.1;
+        }
+                  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
+            player_pos[0] += 0.1;
+        }
+        
+        
         // Rendering commands
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -181,6 +203,9 @@ int main() {
         fflush(stdout);
         
         glUniform4fv(sdfPosLocation, numSDF, sdfData);
+        
+        
+        glUniform3f(playerPosLocation, player_pos[0],player_pos[1],player_pos[2]);
         
         
 

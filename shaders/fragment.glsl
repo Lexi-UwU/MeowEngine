@@ -10,6 +10,8 @@ uniform vec4 sdf_locations[8];
 
 uniform float sdf_count;
 
+uniform vec3 player_pos;
+
 
 
 float sdfSphere(vec3 point,vec4 data){
@@ -43,6 +45,7 @@ void main() {
     
     float travelled = 0.0f;
     vec3 ray_pos = vec3(0,0,0);
+    ray_pos = player_pos;
     vec3 direction = normalize(vec3((st.x-0.5)*ratio,(st.y-0.5),1));
     
     
