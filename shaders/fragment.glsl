@@ -311,6 +311,8 @@ void main() {
     	
     	float floorDis = rayMarchFloor(ray_pos,direction);
     	
+	floorDis = 1000000;
+    	
     	
     	//if (dis > floorDis){dis = floorDis;}
     	
@@ -339,7 +341,7 @@ void main() {
     	
     	
     	
-    	if (floorDis <= 1){
+    	if (floorDis <= 5){
     		direction.y = abs(direction.y);
     		collided = true;
     		bounceData[bounce_count] = vec4(0.5,0.1,0,0.8);
@@ -376,7 +378,7 @@ void main() {
     
     
     FragColor = vec4(travelled/20, travelled/20, travelled/20, 1.0);
-    //FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
     //FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
