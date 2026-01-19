@@ -231,14 +231,27 @@ vec3 sumBounces(vec4 bounceData[16], int numBounces){
 #define SURF_DIST 0.001
 #define MAX_DIST 100.0
 
+
+float terrainCalc(vec3 p){
+    float height = snoise(p.xz) * 0.1;
+    // Distance from the point's y-coord to the noise surface
+    return (p.y - (height - 2.0));
+    }
+
 // The function to march the ray through the noise field
 float rayMarchFloor(vec3 ro, vec3 rd) {
+
+// Noise height (scaled by 0.1)
+
+    return terrainCalc(ro);
+
+/*
 
     float dO = 0.0; // Total distance traveled
     
     for(int i = 0; i < MAX_STEPS; i++) {
         vec3 p = ro + rd * dO;
-        float dS = (snoise(vec2(p.x,p.z))*0.1f)-p.y;
+        float dS = (snoise(vec2(p.x,p.z))*0.1f)-p.y-2;
         
         // 1. We take a conservative step (0.5x) to account for 
         // the non-Euclidean nature of noise displacement.
@@ -251,6 +264,7 @@ float rayMarchFloor(vec3 ro, vec3 rd) {
     }
     
     return dO;
+    */
 
 }
 
@@ -311,10 +325,10 @@ void main() {
     	
     	float floorDis = rayMarchFloor(ray_pos,direction);
     	
-	floorDis = 1000000;
+	//floorDis = 1000000;
     	
     	
-    	//if (dis > floorDis){dis = floorDis;}
+    	if (dis > floorDis){dis = floorDis;}
     	
     	if (dis > -(distance(player_pos,ray_pos)-15.0f)){
     	dis = -(distance(player_pos,ray_pos)-15.0f);
@@ -341,7 +355,7 @@ void main() {
     	
     	
     	
-    	if (floorDis <= 5){
+    	if (floorDis <= 0){
     		direction.y = abs(direction.y);
     		collided = true;
     		bounceData[bounce_count] = vec4(0.5,0.1,0,0.8);
@@ -377,8 +391,8 @@ void main() {
     
     
     
-    FragColor = vec4(travelled/20, travelled/20, travelled/20, 1.0);
-    FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    FragColor = vec4(travelled/64, travelled/64, travelled/64, 1.0);
+    //FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
     //FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
