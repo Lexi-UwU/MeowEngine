@@ -361,14 +361,15 @@ void main() {
     	if (floorDis <= 0){
     		direction.y = abs(direction.y);
     		collided = true;
-    		bounceData[bounce_count] = vec4(0.5,0.1,0,0.8);
-    		bounce_count += 1;
     		normal = getTerrainNormal(ray_pos);
-    		//break;
+    		bounceData[bounce_count] = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))),0.8);
+    		bounce_count += 1;
+    		
+    		break;
     	} else if (dis <= 0){
     		collided = true;
-    		vec3 normal = calculateSdfNormal(distances,ray_pos);
-    		bounceData[bounce_count] = vec4(1.0,1.0,1.0, 0.0 );
+    		normal = calculateSdfNormal(distances,ray_pos);
+    		bounceData[bounce_count] = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))), 0.5 );
     		bounce_count += 1;
     		direction = reflect(direction,normal);
     		ray_pos += direction;
@@ -398,7 +399,8 @@ void main() {
     FragColor = vec4(travelled/64, travelled/64, travelled/64, 1.0);
     FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
     FragColor = vec4(normal,1.0);
-    //FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
+    FragColor = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))),1.0);
+    FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
 }
