@@ -6,12 +6,30 @@ uniform vec2 u_resolution; // Passed from C code
 
 
 
-uniform vec4 sdf_locations[512];
+uniform vec4 sdf_locations[8];
+
+uniform float sdf_count;
 
 
 
 float sdfSphere(vec3 point,vec4 data){
 	return distance(data.xyz, point) - data.w;
+}
+
+float minFunc(float x, float y){
+	if (x<y){return x;}
+	return y;
+}
+
+float calculateSdfDistance(vec3 point){
+	float dis =  100000;
+	for (int i = 0; i < sdf_count; i++){
+		float dis1 = sdfSphere(point,sdf_locations[i]);
+		dis = minFunc(dis,dis1);
+	
+	}
+	return dis;
+
 }
 
 void main() {
@@ -33,12 +51,12 @@ void main() {
     float step_size = 0.1;
     
     while (travelled < 20.0f){
-    	float dis = sdfSphere(ray_pos,vec4(0,0,6,2));
+    	float dis = calculateSdfDistance(ray_pos);
     	
     	if (dis > 0.02){
     	step_size = dis;
     	}else{
-    		step_size = 0.1;
+    		step_size = 0.02;
     		collided = true;
     		break;
     	}

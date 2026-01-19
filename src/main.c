@@ -138,7 +138,9 @@ int main() {
     // Get the location of the uniform
     int resLocation = glGetUniformLocation(shaderProgram, "u_resolution");    
     
-    int sdfPosLocation = glGetUniformLocation(shaderProgram, "u_resolution");    
+    int sdfPosLocation = glGetUniformLocation(shaderProgram, "sdf_locations");    
+    
+    int sdfCountLocation = glGetUniformLocation(shaderProgram, "sdf_count");    
     
     
     
@@ -148,7 +150,8 @@ int main() {
     
     float sdfData[] = {
         // First triangle
-         0.0f,  0.0f, 5.0f, 1.0f,  // Top Right
+         0.0f,  0.0f, 6.0f, 1.0f, 
+         1.0f,  0.0f, 6.0f, 1.0f, 
     };
     
     
@@ -157,9 +160,9 @@ int main() {
     // 6. Main Render Loop
     while (!glfwWindowShouldClose(window)) {
         // Input
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
             glfwSetWindowShouldClose(window, 1);
-
+  }
         // Rendering commands
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -173,9 +176,15 @@ int main() {
         glViewport(0, 0, width, height);
         glUniform2f(resLocation, (float)width, (float)height);
         
-        glUniform4fv(sdfPosLocation, 1, sdfData);
-
+        int numSDF = sizeof(sdfData) / (sizeof(float) * 4);
+        printf("Count: %d \n",numSDF);
+        fflush(stdout);
         
+        glUniform4fv(sdfPosLocation, numSDF, sdfData);
+        
+        
+
+        glUniform1f(sdfCountLocation, (float)numSDF);
         
         
         
