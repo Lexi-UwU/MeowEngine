@@ -18,6 +18,83 @@ uniform vec3 camera_rot;
 
 
 
+//
+// Description : Array and textureless GLSL 2D simplex noise function.
+//      Author : Ian McEwan, Ashima Arts.
+//  Maintainer : stegu
+//     Lastmod : 20110822 (ijm)
+//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
+//               Distributed under the MIT License. See LICENSE file.
+//               https://github.com/ashima/webgl-noise
+//               https://github.com/stegu/webgl-noise
+// 
+
+vec3 mod289(vec3 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec2 mod289(vec2 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec3 permute(vec3 x) {
+  return mod289(((x*34.0)+10.0)*x);
+}
+
+float snoise(vec2 v)
+  {
+  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                     -0.577350269189626,  // -1.0 + 2.0 * C.x
+                      0.024390243902439); // 1.0 / 41.0
+// First corner
+  vec2 i  = floor(v + dot(v, C.yy) );
+  vec2 x0 = v -   i + dot(i, C.xx);
+
+// Other corners
+  vec2 i1;
+  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+  //i1.y = 1.0 - i1.x;
+  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  // x0 = x0 - 0.0 + 0.0 * C.xx ;
+  // x1 = x0 - i1 + 1.0 * C.xx ;
+  // x2 = x0 - 1.0 + 2.0 * C.xx ;
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+
+// Permutations
+  i = mod289(i); // Avoid truncation effects in permutation
+  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+		+ i.x + vec3(0.0, i1.x, 1.0 ));
+
+  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+  m = m*m ;
+  m = m*m ;
+
+// Gradients: 41 points uniformly over a line, mapped onto a diamond.
+// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+
+// Normalise gradients implicitly by scaling m
+// Approximation of: m *= inversesqrt( a0*a0 + h*h );
+  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+
+// Compute final noise value at P
+  vec3 g;
+  g.x  = a0.x  * x0.x  + h.x  * x0.y;
+  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
+}
+
+
+
+//Snoise end
+
+
 mat3 rotate3D(vec3 angles) {
     vec3 c = cos(angles);
     vec3 s = sin(angles);
@@ -149,6 +226,53 @@ vec3 sumBounces(vec4 bounceData[16], int numBounces){
 
 }
 
+
+#define MAX_STEPS 128
+#define SURF_DIST 0.001
+#define MAX_DIST 100.0
+
+// The function to march the ray through the noise field
+float rayMarchFloor(vec3 ro, vec3 rd) {
+
+    float dO = 0.0; // Total distance traveled
+    
+    for(int i = 0; i < MAX_STEPS; i++) {
+        vec3 p = ro + rd * dO;
+        float dS = (snoise(vec2(p.x,p.z))*0.1f)-p.y;
+        
+        // 1. We take a conservative step (0.5x) to account for 
+        // the non-Euclidean nature of noise displacement.
+        // 2. We use abs(dS) so the ray doesn't get "stuck" if it 
+        // accidentally enters the ground.
+        dO += abs(dS) * 0.5; 
+        
+        // Safety exit: if we hit the surface or go too far
+        if(dO > MAX_DIST || abs(dS) < SURF_DIST) break;
+    }
+    
+    return dO;
+
+}
+
+
+// Assuming your noise function is: float snoise(vec2 v);
+
+vec3 getTerrainNormal(vec3 p) {
+    // 1. Define a small step (epsilon)
+    float h = 0.01;
+    
+    // 2. Sample the height at the current point and offsets
+    // Note: We only need to sample the height (y), not the full map()
+    float hL = snoise(p.xz - vec2(h, 0.0)); // Height to the Left
+    float hR = snoise(p.xz + vec2(h, 0.0)); // Height to the Right
+    float hD = snoise(p.xz - vec2(0.0, h)); // Height Down
+    float hU = snoise(p.xz + vec2(0.0, h)); // Height Up
+
+    // 3. The normal is the normalized gradient
+    // X-slope is (right - left), Z-slope is (up - down)
+    // The '2.0 * h' accounts for the distance between the two samples
+    return normalize(vec3(hL - hR, 2.0 * h, hD - hU));
+}
 void main() {
     // 1. gl_FragCoord.xy gives the pixel position (0 to Width, 0 to Height)
     // 2. Dividing by resolution gives normalized coordinates (0.0 to 1.0)
@@ -185,12 +309,14 @@ void main() {
     	
     	float dis = calculateSdfDistance(distances);
     	
-    	float floorDis = ray_pos.y + 2;
+    	float floorDis = rayMarchFloor(ray_pos,direction);
     	
-    	if (dis > floorDis){dis = floorDis;}
+    	
+    	//if (dis > floorDis){dis = floorDis;}
     	
     	if (dis > -(distance(player_pos,ray_pos)-15.0f)){
     	dis = -(distance(player_pos,ray_pos)-15.0f);
+    	
     	}
     	
     	
@@ -206,18 +332,19 @@ void main() {
     		collided = true;
     		bounceData[bounce_count] = vec4(0.0,0.0,0.5f,0.0);
     		bounce_count += 1;
-    		break;
+    		bounceData[0] = vec4(getTerrainNormal(ray_pos),1.0);
+    		//break;
     	
     	}
     	
     	
     	
-    	if (ray_pos.y < -2){
+    	if (floorDis <= 1){
     		direction.y = abs(direction.y);
     		collided = true;
-    		bounceData[bounce_count] = vec4(0.5,0.1,0,0.0);
+    		bounceData[bounce_count] = vec4(0.5,0.1,0,0.8);
     		bounce_count += 1;
-    		break;
+    		//break;
     	} else if (dis <= 0){
     		collided = true;
     		vec3 normal = calculateSdfNormal(distances,ray_pos);
@@ -249,9 +376,10 @@ void main() {
     
     
     FragColor = vec4(travelled/20, travelled/20, travelled/20, 1.0);
-    FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
-    FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
+    //FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    //FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
-}	
+}
+//FragColor = vec4(1.0,0.0,0.0,1.0);
 }
