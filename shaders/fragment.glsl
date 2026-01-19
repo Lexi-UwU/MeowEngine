@@ -89,9 +89,15 @@ vec3 calculateSdfNormal(float distances[8],vec3 point){
 		float dis1 = distances[i];
 		
 		
-		totalDistance += 1/(dis1+0.1);
-		normal += sdfSphereNormal(point,sdf_locations[i])/(dis1+0.1);
-
+		totalDistance += 1/(dis1+0.0);
+		normal += sdfSphereNormal(point,sdf_locations[i])/(dis1+0.0);
+		
+		
+		if (dis1 <= 0){
+		normal = sdfSphereNormal(point,sdf_locations[i]);
+		totalDistance = 1;
+		break;
+		}
 		/*
 		if (dis1<dis){
 		dis = dis1;
@@ -101,6 +107,9 @@ vec3 calculateSdfNormal(float distances[8],vec3 point){
 		*/
 	}
 	normal = normal/totalDistance;
+	//if (totalDistance < 100.0){
+	//	return vec3(1.0,1.0,1.0);
+	//}
 	return normal;
 }
 
@@ -161,7 +170,7 @@ void main() {
     
     float step_size = 0.1;
     
-    float min_step = 0.00001f;
+    float min_step = 0.01f;
     
     float distances[8];
     
@@ -171,7 +180,7 @@ void main() {
     vec4 bounceData[16];
     
     
-    while (travelled < 20.0f){
+    while (travelled < 880.0f){
     	distances = calculateSdfDistances(ray_pos);
     	
     	float dis = calculateSdfDistance(distances);
@@ -179,6 +188,10 @@ void main() {
     	float floorDis = ray_pos.y + 2;
     	
     	if (dis > floorDis){dis = floorDis;}
+    	
+    	if (dis > -(distance(player_pos,ray_pos)-15.0f)){
+    	dis = -(distance(player_pos,ray_pos)-15.0f);
+    	}
     	
     	
     	
@@ -189,25 +202,41 @@ void main() {
 
     	}
     	
+    	if (distance(player_pos,ray_pos) >= 15.0f){
+    		collided = true;
+    		bounceData[bounce_count] = vec4(0.0,0.0,0.5f,0.0);
+    		bounce_count += 1;
+    		break;
+    	
+    	}
+    	
+    	
     	
     	if (ray_pos.y < -2){
     		direction.y = abs(direction.y);
     		collided = true;
     		bounceData[bounce_count] = vec4(0.5,0.1,0,0.0);
     		bounce_count += 1;
-    		//break;
-    	} else if (dis < 0){
+    		break;
+    	} else if (dis <= 0){
     		collided = true;
     		vec3 normal = calculateSdfNormal(distances,ray_pos);
-    		bounceData[bounce_count] = vec4(normal, 1.0 );
+    		bounceData[bounce_count] = vec4(1.0,1.0,1.0, 0.0 );
     		bounce_count += 1;
-    		break;
+    		direction = reflect(direction,normal);
+    		ray_pos += direction;
+    		//break;
     	}
+    	
+
+    	if (bounce_count > 8){break;}
     	
 
     
     	ray_pos += direction*step_size;
     	travelled += step_size;
+    	
+    	
     	
     	
 
@@ -222,6 +251,7 @@ void main() {
     FragColor = vec4(travelled/20, travelled/20, travelled/20, 1.0);
     FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
     FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
-    }
-
+    }else{
+    FragColor = vec4(1.0,0.0,0.0,1.0);
+}	
 }

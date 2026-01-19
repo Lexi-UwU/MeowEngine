@@ -304,7 +304,7 @@ int main() {
         delta = end - start;
         if (delta > 0) {
           float fps = 1.0f / (float)delta;
-          printf("FPS: %.2f (Delta: %f s)\n", fps, delta);
+          //printf("FPS: %.2f (Delta: %f s)\n", fps, delta);
         }
         fflush(stdout);
         
