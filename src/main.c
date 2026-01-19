@@ -199,8 +199,8 @@ int main() {
         glUniform2f(resLocation, (float)width, (float)height);
         
         int numSDF = sizeof(sdfData) / (sizeof(float) * 4);
-        printf("Count: %d \n",numSDF);
-        fflush(stdout);
+        //printf("Count: %d \n",numSDF);
+        //fflush(stdout);
         
         glUniform4fv(sdfPosLocation, numSDF, sdfData);
         

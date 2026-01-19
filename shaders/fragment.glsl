@@ -18,21 +18,48 @@ float sdfSphere(vec3 point,vec4 data){
 	return distance(data.xyz, point) - data.w;
 }
 
+vec3 sdfSphereNormal(vec3 point,vec4 data){
+	return normalize(data.xyz- point);
+}
+
 float minFunc(float x, float y){
 	if (x<y){return x;}
 	return y;
 }
 
-float calculateSdfDistance(vec3 point){
+float calculateSdfDistance(float distances[8]){
 	float dis =  100000;
 	for (int i = 0; i < sdf_count; i++){
-		float dis1 = sdfSphere(point,sdf_locations[i]);
+		float dis1 = distances[i];
 		dis = minFunc(dis,dis1);
-	
 	}
 	return dis;
-
 }
+
+vec3 calculateSdfNormal(float distances[8],vec3 point){
+	vec3 normal = vec3(0,0,0);
+	float dis =  100000;
+	for (int i = 0; i < sdf_count; i++){
+		float dis1 = distances[i];
+		if (dis1<dis){
+		dis = dis1;
+		normal = sdfSphereNormal(point,sdf_locations[i]);
+		
+		}
+	}
+	return normal;
+}
+
+
+
+float[8] calculateSdfDistances(vec3 point){
+	float distances[8];
+	for (int i = 0; i < sdf_count; i++){
+		distances[i] = sdfSphere(point,sdf_locations[i]);
+	}
+	return distances;
+}
+
 
 void main() {
     // 1. gl_FragCoord.xy gives the pixel position (0 to Width, 0 to Height)
@@ -55,8 +82,12 @@ void main() {
     
     float min_step = 0.00001f;
     
+    float distances[8];
+    
     while (travelled < 20.0f){
-    	float dis = calculateSdfDistance(ray_pos);
+    	distances = calculateSdfDistances(ray_pos);
+    	
+    	float dis = calculateSdfDistance(distances);
     	
     	if (dis > min_step){
     	step_size = dis;
@@ -79,6 +110,7 @@ void main() {
     
     if (collided){
     FragColor = vec4(travelled/20, travelled/20, travelled/20, 1.0);
+    FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
     }
 
 }
