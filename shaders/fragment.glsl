@@ -54,9 +54,20 @@ vec3 sdfSphereNormal(vec3 point,vec4 data){
 	return normalize(data.xyz- point);
 }
 
+
+// circular
+float smin( float a, float b, float k )
+{
+    k *= 1.0/(1.0-sqrt(0.5));
+    float h = max( k-abs(a-b), 0.0 )/k;
+    return min(a,b) - k*0.5*(1.0+h-sqrt(1.0-h*(h-2.0)));
+}
+
+
 float minFunc(float x, float y){
-	if (x<y){return x;}
-	return y;
+	return smin(x,y,0.5);
+	//if (x<y){return x;}
+	//return y;
 }
 
 float calculateSdfDistance(float distances[8]){
@@ -71,14 +82,25 @@ float calculateSdfDistance(float distances[8]){
 vec3 calculateSdfNormal(float distances[8],vec3 point){
 	vec3 normal = vec3(0,0,0);
 	float dis =  100000;
+	
+	float totalDistance = 0;
+	
 	for (int i = 0; i < sdf_count; i++){
 		float dis1 = distances[i];
+		
+		
+		totalDistance += 1/(dis1+0.1);
+		normal += sdfSphereNormal(point,sdf_locations[i])/(dis1+0.1);
+
+		/*
 		if (dis1<dis){
 		dis = dis1;
 		normal = sdfSphereNormal(point,sdf_locations[i]);
 		
 		}
+		*/
 	}
+	normal = normal/totalDistance;
 	return normal;
 }
 

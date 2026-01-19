@@ -192,7 +192,7 @@ int main() {
     float sdfData[] = {
         // First triangle
          0.0f,  0.0f, 6.0f, 1.0f, 
-         1.0f,  0.0f, 6.0f, 1.0f, 
+         4.0f,  0.0f, 6.0f, 1.0f, 
     };
     
     
