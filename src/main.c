@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 
 
@@ -84,7 +85,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 
-
+double get_time_in_seconds() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
+}
 int main() {
     // 1. Initialize GLFW and tell it we want to use OpenGL 3.3 Core Profile
     if (!glfwInit()) {
@@ -211,36 +216,42 @@ int main() {
     
 
     // 6. Main Render Loop
+    double start = get_time_in_seconds();
+    double end = get_time_in_seconds();
+    double delta = end - start;
+    
+    
     while (!glfwWindowShouldClose(window)) {
+      start = get_time_in_seconds();
         // Input
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
             glfwSetWindowShouldClose(window, 1);
         }
         
           if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-            player_pos[2] += 0.1f * sin((yaw + M_PI/2));
-            player_pos[0] += 0.1f * cos((yaw + M_PI/2));
+            player_pos[2] += 5.0f * delta * sin((yaw + M_PI/2));
+            player_pos[0] += 5.0f * delta * cos((yaw + M_PI/2));
             
         }
           if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-            player_pos[2] += 0.1f * sin((yaw - M_PI/2));
-            player_pos[0] += 0.1f * cos((yaw - M_PI/2));
+            player_pos[2] += 5.0f * delta * sin((yaw - M_PI/2));
+            player_pos[0] += 5.0f * delta * cos((yaw - M_PI/2));
         }
         
           if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-            player_pos[2] += 0.1f * sin((yaw + M_PI));
-            player_pos[0] += 0.1f * cos((yaw + M_PI));
+            player_pos[2] += 5.0f * delta * sin((yaw + M_PI));
+            player_pos[0] += 5.0f * delta * cos((yaw + M_PI));
         }
                   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-            player_pos[2] -= 0.1f * sin((yaw + M_PI));
-            player_pos[0] -= 0.1f * cos((yaw + M_PI));
+            player_pos[2] -= 5.0f * delta * sin((yaw + M_PI));
+            player_pos[0] -= 5.0f * delta * cos((yaw + M_PI));
         }
         
         
 
         
-        printf("Yaw: %d \n",yaw);
-        printf("Pitch: %d \n",pitch);
+        //printf("Yaw: %d \n",yaw);
+        //printf("Pitch: %d \n",pitch);
         fflush(stdout);
         
         player_rot[0] = pitch;
@@ -285,7 +296,13 @@ int main() {
         // Swap buffers and poll IO events
         glfwSwapBuffers(window);
         glfwPollEvents();
-        
+        end = get_time_in_seconds();
+        delta = end - start;
+        if (delta > 0) {
+          float fps = 1.0f / (float)delta;
+          printf("FPS: %.2f (Delta: %f s)\n", fps, delta);
+        }
+        fflush(stdout);
         
     }
 
