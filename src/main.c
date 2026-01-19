@@ -58,6 +58,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // 2. Create the window
+    int width = 800, height = 600;
     GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Fullscreen Fragment Shader", NULL, NULL);
     if (!window) {
         fprintf(stderr, "Failed to create GLFW window\n");
@@ -132,6 +133,26 @@ int main() {
     // Unbind (Optional)
     glBindBuffer(GL_ARRAY_BUFFER, 0); 
     glBindVertexArray(0); 
+    
+    
+    // Get the location of the uniform
+    int resLocation = glGetUniformLocation(shaderProgram, "u_resolution");    
+    
+    int sdfPosLocation = glGetUniformLocation(shaderProgram, "u_resolution");    
+    
+    
+    
+    
+    
+    
+    
+    float sdfData[] = {
+        // First triangle
+         0.0f,  0.0f, 5.0f, 1.0f,  // Top Right
+    };
+    
+    
+    
 
     // 6. Main Render Loop
     while (!glfwWindowShouldClose(window)) {
@@ -145,6 +166,20 @@ int main() {
 
         // Draw our full-screen quad
         glUseProgram(shaderProgram);
+        
+        
+        // Update resolution uniform (in case window was resized)
+        glfwGetFramebufferSize(window, &width, &height);
+        glViewport(0, 0, width, height);
+        glUniform2f(resLocation, (float)width, (float)height);
+        
+        glUniform4fv(sdfPosLocation, 1, sdfData);
+
+        
+        
+        
+        
+        
         glBindVertexArray(VAO);
         // Draw 6 vertices (2 triangles) instead of 3
         glDrawArrays(GL_TRIANGLES, 0, 6);
