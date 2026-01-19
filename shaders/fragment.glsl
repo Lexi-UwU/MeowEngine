@@ -53,13 +53,18 @@ void main() {
     
     float step_size = 0.1;
     
+    float min_step = 0.00001f;
+    
     while (travelled < 20.0f){
     	float dis = calculateSdfDistance(ray_pos);
     	
-    	if (dis > 0.02){
+    	if (dis > min_step){
     	step_size = dis;
     	}else{
-    		step_size = 0.02;
+    		step_size = min_step;
+
+    	}
+    	if (dis <= 0){
     		collided = true;
     		break;
     	}
