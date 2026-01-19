@@ -269,6 +269,17 @@ float rayMarchFloor(vec3 ro, vec3 rd) {
 }
 
 
+vec3 calulateLighting(vec3 normal){
+	vec3 color = vec3(0,0,0);
+	color+= vec3(dot(normal,vec3(1.0f,0.1f,0.1f))) * vec3(1.0,0.0,0.0);
+	color+= vec3(dot(normal,vec3(0.5f,1.0f,0.5f))) * vec3(0.0,1.0,1.0);
+	color+= vec3(abs(dot(normal,vec3(-0.5f,0.5f,1.0f)))) * 0.2f;
+	return color;
+
+
+}
+
+
 // Assuming your noise function is: float snoise(vec2 v);
 
 vec3 getTerrainNormal(vec3 p) {
@@ -351,8 +362,8 @@ void main() {
     		collided = true;
     		bounceData[bounce_count] = vec4(0.0,0.0,0.5f,0.0);
     		bounce_count += 1;
-    		bounceData[0] = vec4(getTerrainNormal(ray_pos),1.0);
-    		//break;
+    		//bounceData[0] = vec4(getTerrainNormal(ray_pos),1.0);
+    		break;
     	
     	}
     	
@@ -362,18 +373,19 @@ void main() {
     		direction.y = abs(direction.y);
     		collided = true;
     		normal = getTerrainNormal(ray_pos);
-    		bounceData[bounce_count] = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))),0.8);
+    		bounceData[bounce_count] = vec4(calulateLighting(normal),1.0);
     		bounce_count += 1;
+    		ray_pos += direction;
     		
     		break;
     	} else if (dis <= 0){
     		collided = true;
     		normal = calculateSdfNormal(distances,ray_pos);
-    		bounceData[bounce_count] = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))), 0.5 );
+    		bounceData[bounce_count] = vec4(calulateLighting(normal), 0.5 );
     		bounce_count += 1;
     		direction = reflect(direction,normal);
     		ray_pos += direction;
-    		//break;
+    		break;
     	}
     	
 
