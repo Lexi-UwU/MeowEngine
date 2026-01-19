@@ -93,6 +93,31 @@ float[8] calculateSdfDistances(vec3 point){
 }
 
 
+
+vec3 sumBounces(vec4 bounceData[16], int numBounces){
+
+	vec3 finalColor = vec3(0.0);
+	int lastIndex = numBounces - 1;
+
+	// Start with the color of the very last thing hit (the "emissive" or background)
+	finalColor = bounceData[lastIndex].xyz;
+
+	for (int i = lastIndex - 1; i >= 0; i--) {
+		vec3 surfaceColor = bounceData[i].xyz;
+	    	float roughness = bounceData[i].w;
+
+	    	// 1. Simple Multiplicative Blending
+	    	// The current surface reflects the 'finalColor' coming from the next surfaces
+	    	// We scale by (1.0 - roughness) because rougher surfaces scatter light away
+	    	finalColor = surfaceColor * (finalColor * (1.0 - roughness));
+	    
+	   
+		}
+ 	return finalColor;
+
+
+}
+
 void main() {
     // 1. gl_FragCoord.xy gives the pixel position (0 to Width, 0 to Height)
     // 2. Dividing by resolution gives normalized coordinates (0.0 to 1.0)
@@ -118,6 +143,12 @@ void main() {
     
     float distances[8];
     
+    
+    int bounce_count = 0;
+    
+    vec4 bounceData[16];
+    
+    
     while (travelled < 20.0f){
     	distances = calculateSdfDistances(ray_pos);
     	
@@ -127,21 +158,31 @@ void main() {
     	
     	if (dis > floorDis){dis = floorDis;}
     	
+    	
+    	
     	if (dis > min_step){
     	step_size = dis;
     	}else{
     		step_size = min_step;
 
     	}
-    	if (dis <= 0){
+    	
+    	
+    	if (ray_pos.y < -2){
+    		direction.y = abs(direction.y);
     		collided = true;
+    		bounceData[bounce_count] = vec4(0.5,0.1,0,0.0);
+    		bounce_count += 1;
+    		//break;
+    	} else if (dis < 0){
+    		collided = true;
+    		vec3 normal = calculateSdfNormal(distances,ray_pos);
+    		bounceData[bounce_count] = vec4(normal, 1.0 );
+    		bounce_count += 1;
     		break;
     	}
     	
-    	if (ray_pos.y < -2){
-    		collided = true;
-    		break;
-    	}
+
     
     	ray_pos += direction*step_size;
     	travelled += step_size;
@@ -152,8 +193,13 @@ void main() {
     }
     
     if (collided){
+    
+    
+    
+    
     FragColor = vec4(travelled/20, travelled/20, travelled/20, 1.0);
     FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }
 
 }
