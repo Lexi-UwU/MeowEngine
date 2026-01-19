@@ -3,6 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+
+#include <math.h>
+#define degToRad(angleInDegrees) ((angleInDegrees) * M_PI / 180.0)
+#define radToDeg(angleInRadians) ((angleInRadians) * 180.0 / M_PI)
+
+
 // Function to read shader files from disk
 char* readFile(const char* filename) {
     FILE *f = fopen(filename, "rb");
@@ -46,6 +53,37 @@ void checkCompileErrors(unsigned int shader, const char* type) {
         }
     }
 }
+
+
+double lastX = 400, lastY = 300;
+float yaw = 0.0f, pitch = 0.0f;
+bool firstMouse = true;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // Reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.01f;
+    xoffset *= -sensitivity;
+    yoffset *= sensitivity;
+
+    yaw   += xoffset;
+    pitch += yoffset;
+
+    // Constrain pitch so the screen doesn't flip
+    if (pitch > 89.0f) pitch = 89.0f;
+    if (pitch < -89.0f) pitch = -89.0f;
+}
+
+
 
 int main() {
     // 1. Initialize GLFW and tell it we want to use OpenGL 3.3 Core Profile
@@ -145,7 +183,7 @@ int main() {
     
     int playerPosLocation = glGetUniformLocation(shaderProgram, "player_pos");    
     
-    
+    int playerRotLocation = glGetUniformLocation(shaderProgram, "camera_rot");    
     
     
     
@@ -160,7 +198,16 @@ int main() {
     
     float player_pos[] = {0.0f,0.0f,0.0f}; //TODO: Replace with struct
     
+    float player_rot[] = {0.0f,0.0f,0.0f}; //TODO: Replace with struct
     
+    
+
+    
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    
+    //if (glfwRawMouseMotionSupported())
+    //glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     
 
     // 6. Main Render Loop
@@ -171,18 +218,33 @@ int main() {
         }
         
           if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS){
-            player_pos[2] += 0.1;
+            player_pos[2] += 0.1f * sin((yaw + M_PI/2));
+            player_pos[0] += 0.1f * cos((yaw + M_PI/2));
+            
         }
-                  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-            player_pos[2] -= 0.1;
+          if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+            player_pos[2] += 0.1f * sin((yaw - M_PI/2));
+            player_pos[0] += 0.1f * cos((yaw - M_PI/2));
         }
         
-                  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
-            player_pos[0] -= 0.1;
+          if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS){
+            player_pos[2] += 0.1f * sin((yaw + M_PI));
+            player_pos[0] += 0.1f * cos((yaw + M_PI));
         }
                   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS){
-            player_pos[0] += 0.1;
+            player_pos[2] -= 0.1f * sin((yaw + M_PI));
+            player_pos[0] -= 0.1f * cos((yaw + M_PI));
         }
+        
+        
+
+        
+        printf("Yaw: %d \n",yaw);
+        printf("Pitch: %d \n",pitch);
+        fflush(stdout);
+        
+        player_rot[0] = pitch;
+        player_rot[1] = yaw;
         
         
         // Rendering commands
@@ -207,6 +269,8 @@ int main() {
         
         glUniform3f(playerPosLocation, player_pos[0],player_pos[1],player_pos[2]);
         
+        glUniform3f(playerRotLocation, player_rot[0],player_rot[1],player_rot[2]);
+        
         
 
         glUniform1f(sdfCountLocation, (float)numSDF);
@@ -221,6 +285,8 @@ int main() {
         // Swap buffers and poll IO events
         glfwSwapBuffers(window);
         glfwPollEvents();
+        
+        
     }
 
     // 7. Cleanup Resources

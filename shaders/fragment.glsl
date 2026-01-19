@@ -12,6 +12,38 @@ uniform float sdf_count;
 
 uniform vec3 player_pos;
 
+uniform vec3 camera_rot;
+
+
+
+
+
+mat3 rotate3D(vec3 angles) {
+    vec3 c = cos(angles);
+    vec3 s = sin(angles);
+
+    // Rotation matrix for each axis
+    mat3 rotX = mat3(
+        1.0, 0.0, 0.0,
+        0.0, c.x, s.x,
+        0.0, -s.x, c.x
+    );
+
+    mat3 rotY = mat3(
+        c.y, 0.0, -s.y,
+        0.0, 1.0, 0.0,
+        s.y, 0.0, c.y
+    );
+
+    mat3 rotZ = mat3(
+        c.z, s.z, 0.0,
+        -s.z, c.z, 0.0,
+        0.0, 0.0, 1.0
+    );
+
+    // Combine them (Z * Y * X order)
+    return rotX * rotY * rotZ;
+}
 
 
 float sdfSphere(vec3 point,vec4 data){
@@ -75,6 +107,8 @@ void main() {
     ray_pos = player_pos;
     vec3 direction = normalize(vec3((st.x-0.5)*ratio,(st.y-0.5),1));
     
+    direction = direction * rotate3D(camera_rot);
+    
     
     bool collided = false;
     
@@ -89,6 +123,10 @@ void main() {
     	
     	float dis = calculateSdfDistance(distances);
     	
+    	float floorDis = ray_pos.y + 2;
+    	
+    	if (dis > floorDis){dis = floorDis;}
+    	
     	if (dis > min_step){
     	step_size = dis;
     	}else{
@@ -96,6 +134,11 @@ void main() {
 
     	}
     	if (dis <= 0){
+    		collided = true;
+    		break;
+    	}
+    	
+    	if (ray_pos.y < -2){
     		collided = true;
     		break;
     	}
