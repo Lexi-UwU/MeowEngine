@@ -220,6 +220,8 @@ int main() {
     double end = get_time_in_seconds();
     double delta = end - start;
     
+    float gameTime = 0.0f;
+    
     
     while (!glfwWindowShouldClose(window)) {
       start = get_time_in_seconds();
@@ -247,6 +249,8 @@ int main() {
             player_pos[0] -= 5.0f * delta * cos((yaw + M_PI));
         }
         
+        gameTime += delta;
+        sdfData[4] = 4.0f * sin(1.0f* gameTime); // SDF 2 - X
         
 
         
