@@ -318,6 +318,9 @@ void main() {
     vec4 bounceData[16];
     
     
+    vec3 normal = vec3(0,0,0);
+    
+    
     while (travelled < 880.0f){
     	distances = calculateSdfDistances(ray_pos);
     	
@@ -360,6 +363,7 @@ void main() {
     		collided = true;
     		bounceData[bounce_count] = vec4(0.5,0.1,0,0.8);
     		bounce_count += 1;
+    		normal = getTerrainNormal(ray_pos);
     		//break;
     	} else if (dis <= 0){
     		collided = true;
@@ -392,7 +396,8 @@ void main() {
     
     
     FragColor = vec4(travelled/64, travelled/64, travelled/64, 1.0);
-    //FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    FragColor = vec4(normal,1.0);
     //FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
