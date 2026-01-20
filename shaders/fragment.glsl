@@ -236,11 +236,16 @@ float terrainCalc(vec3 p){
     float height = snoise(p.xz) * 0.1;
     height = 0;
     
+    float totalSize = 0.0f;
+    
     for (int octave = 1; octave < 16; octave ++){
-    	height += (snoise(p.xz*octave*0.01f)/octave)*4.0f;
+    	float strength = pow(0.5,octave);
+    	height += snoise(p.xz*pow(2,octave)*0.01f) * strength;
+    	totalSize+= strength;
     }
     // Distance from the point's y-coord to the noise surface
-    return (p.y - (height - 4.0));
+    height = height / totalSize;
+    return (p.y - ((height*5) - 4.0));
     }
 
 // The function to march the ray through the noise field
@@ -286,22 +291,18 @@ vec3 calulateLighting(vec3 normal){
 
 
 // Assuming your noise function is: float snoise(vec2 v);
-
 vec3 getTerrainNormal(vec3 p) {
-    // 1. Define a small step (epsilon)
-    float h = 0.01;
+    // Epsilon - very small displacement
+    const float h = 0.001; 
+    const vec2 k = vec2(1, -1);
     
-    // 2. Sample the height at the current point and offsets
-    // Note: We only need to sample the height (y), not the full map()
-    float hL = snoise(p.xz - vec2(h, 0.0)); // Height to the Left
-    float hR = snoise(p.xz + vec2(h, 0.0)); // Height to the Right
-    float hD = snoise(p.xz - vec2(0.0, h)); // Height Down
-    float hU = snoise(p.xz + vec2(0.0, h)); // Height Up
-
-    // 3. The normal is the normalized gradient
-    // X-slope is (right - left), Z-slope is (up - down)
-    // The '2.0 * h' accounts for the distance between the two samples
-    return normalize(vec3(hL - hR, 2.0 * h, hD - hU));
+    // Four samples in a tetrahedral shape
+    return normalize(
+        k.xyy * terrainCalc(p + k.xyy * h) + 
+        k.yyx * terrainCalc(p + k.yyx * h) + 
+        k.yxy * terrainCalc(p + k.yxy * h) + 
+        k.xxx * terrainCalc(p + k.xxx * h)
+    );
 }
 void main() {
     // 1. gl_FragCoord.xy gives the pixel position (0 to Width, 0 to Height)
@@ -345,7 +346,7 @@ void main() {
     	
     	float dis = calculateSdfDistance(distances);
     	
-    	float floorDis = rayMarchFloor(ray_pos,direction)*0.2;
+    	float floorDis = rayMarchFloor(ray_pos,direction)*0.1;
     	
 	//floorDis = 1000000;
     	
@@ -368,7 +369,7 @@ void main() {
     	
     	if (distance(player_pos,ray_pos) >= view_distance){
     		collided = true;
-    		bounceData[bounce_count] = vec4(0.0,0.0,0.5f,0.0);
+    		bounceData[bounce_count] = vec4(0.0,0.2,0.5f,0.0);
     		bounce_count += 1;
     		//bounceData[0] = vec4(getTerrainNormal(ray_pos),1.0);
     		break;
@@ -378,15 +379,18 @@ void main() {
     	
     	
     	if (floorDis <= 0){
-    		direction.y = abs(direction.y);
+    		//direction.y = abs(direction.y);
+    		
     		collided = true;
     		normal = getTerrainNormal(ray_pos);
-    		bounceData[bounce_count] = vec4(calulateLighting(normal),1.0);
+    		direction = reflect(direction,normal);
+    		bounceData[bounce_count] = vec4(calulateLighting(normal),0.8);
     		bounce_count += 1;
     		ray_pos += direction;
     		
-    		break;
-    	} else if (dis <= 0){
+    		//break;
+    	} 
+    	else if (dis <= 0){
     		collided = true;
     		normal = calculateSdfNormal(distances,ray_pos);
     		bounceData[bounce_count] = vec4(calulateLighting(normal), 0.5 );
@@ -418,9 +422,10 @@ void main() {
     
     FragColor = vec4(travelled/64, travelled/64, travelled/64, 1.0);
     //FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
-    //FragColor = vec4(normal,1.0);
+    FragColor = vec4(normal,1.0);
     //FragColor = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))),1.0);
     //FragColor = vec4(sumBounces(bounceData,bounce_count)/(travelled*0.4),1.0);
+    FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
 }
