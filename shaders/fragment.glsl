@@ -15,6 +15,8 @@ uniform vec3 player_pos;
 uniform vec3 camera_rot;
 
 
+uniform int sdf_material_type[8];
+
 
 
 
@@ -156,38 +158,50 @@ float calculateSdfDistance(float distances[8]){
 	return dis;
 }
 
-vec3 calculateSdfNormal(float distances[8],vec3 point){
-	vec3 normal = vec3(0,0,0);
-	float dis =  100000;
+int getSDFMaterial(float distances[8]){
 	
-	float totalDistance = 0;
+	int material = 0;
+	
+	float dis =  100000;
 	
 	for (int i = 0; i < sdf_count; i++){
 		float dis1 = distances[i];
 		
 		
-		totalDistance += 1/(dis1+0.0);
-		normal += sdfSphereNormal(point,sdf_locations[i])/(dis1+0.0);
-		
-		
-		if (dis1 <= 0){
-		normal = sdfSphereNormal(point,sdf_locations[i]);
-		totalDistance = 1;
-		break;
-		}
-		/*
+
 		if (dis1<dis){
 		dis = dis1;
-		normal = sdfSphereNormal(point,sdf_locations[i]);
+		material = sdf_material_type[i];
 		
 		}
-		*/
+
 	}
-	normal = normal/totalDistance;
-	//if (totalDistance < 100.0){
-	//	return vec3(1.0,1.0,1.0);
-	//}
-	return normal;
+
+	return material;
+}
+
+vec3 calculateSdfNormal(float distances[8], vec3 point) {
+    vec3 normal = vec3(0.0);
+    float totalWeight = 0.0;
+    float epsilon = 0.0001; // Prevent division by zero
+
+    for (int i = 0; i < sdf_count; i++) {
+        float d = distances[i];
+        
+        // Use a power for sharper transitions (Inverse Square Law)
+        // This makes the nearest object much more dominant
+        float weight = 1.0 / (d * d + epsilon);
+        
+        normal += sdfSphereNormal(point, sdf_locations[i]) * weight;
+        totalWeight += weight;
+
+        // Early exit if we are inside or touching an object
+        if (d < epsilon) {
+            return sdfSphereNormal(point, sdf_locations[i]);
+        }
+    }
+    
+    return normalize(normal / totalWeight);
 }
 
 
@@ -284,7 +298,7 @@ vec3 calulateLighting(vec3 normal){
 	color+= vec3(dot(normal,vec3(1.0f,0.1f,0.1f))) * vec3(1.0,0.0,0.0);
 	color+= vec3(dot(normal,vec3(0.5f,1.0f,0.5f))) * vec3(0.0,1.0,1.0);
 	color+= vec3(abs(dot(normal,vec3(-0.5f,0.5f,1.0f)))) * 0.2f;
-	return color;
+	return vec3(distance(color,vec3(0,0,0)));
 
 
 }
@@ -293,7 +307,9 @@ vec3 calulateLighting(vec3 normal){
 // Assuming your noise function is: float snoise(vec2 v);
 vec3 getTerrainNormal(vec3 p) {
     // Epsilon - very small displacement
-    const float h = 0.001; 
+    //const float h = 0.001;
+    const float h = 0.01;
+ 
     const vec2 k = vec2(1, -1);
     
     // Four samples in a tetrahedral shape
@@ -369,7 +385,7 @@ void main() {
     	
     	if (distance(player_pos,ray_pos) >= view_distance){
     		collided = true;
-    		bounceData[bounce_count] = vec4(0.0,0.2,0.5f,0.0);
+    		bounceData[bounce_count] =vec4(vec3(2.0), 1.0 );
     		bounce_count += 1;
     		//bounceData[0] = vec4(getTerrainNormal(ray_pos),1.0);
     		break;
@@ -384,20 +400,34 @@ void main() {
     		collided = true;
     		normal = getTerrainNormal(ray_pos);
     		direction = reflect(direction,normal);
-    		bounceData[bounce_count] = vec4(calulateLighting(normal),0.8);
+    		bounceData[bounce_count] = vec4(calulateLighting(vec3(0.2,0.2,0.2))*calulateLighting(normal),0.0);
+    		//bounceData[bounce_count] = vec4(vec3(0.1,1.0,0.1),0.8);
     		bounce_count += 1;
     		ray_pos += direction;
     		
-    		//break;
+    		break;
     	} 
     	else if (dis <= 0){
     		collided = true;
+    		int material = getSDFMaterial(distances);
+    		if (material == 1){
     		normal = calculateSdfNormal(distances,ray_pos);
-    		bounceData[bounce_count] = vec4(calulateLighting(normal), 0.5 );
+    		bounceData[bounce_count] = vec4(vec3(0.9,0.9,0.9), 0.5 );
+    		bounce_count += 1;
+    		direction = reflect(direction,normal);
+    		ray_pos += direction * 0.1;
+    		
+    		
+    		} else if (material == 2){
+    		
+    		normal = calculateSdfNormal(distances,ray_pos);
+    		bounceData[bounce_count] = vec4(vec3(10.0), 1.0 );
     		bounce_count += 1;
     		direction = reflect(direction,normal);
     		ray_pos += direction;
     		break;
+    		}
+    		//
     	}
     	
 

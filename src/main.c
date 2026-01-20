@@ -188,7 +188,10 @@ int main() {
     
     int playerPosLocation = glGetUniformLocation(shaderProgram, "player_pos");    
     
-    int playerRotLocation = glGetUniformLocation(shaderProgram, "camera_rot");    
+    int playerRotLocation = glGetUniformLocation(shaderProgram, "camera_rot");   
+    
+    
+    int sdfMaterialTypeLocation = glGetUniformLocation(shaderProgram, "sdf_material_type");   
     
     
     
@@ -198,7 +201,10 @@ int main() {
         // First triangle
          0.0f,  0.0f, 6.0f, 1.0f, 
          4.0f,  0.0f, 6.0f, 1.0f, 
+         0.0f,  0.0f, 10.0f, 1.0f, 
     };
+    
+    int sdfMaterialType[] = {1,1,2}; // 1= reflective; 2 = light
     
     
     float player_pos[] = {0.0f,0.0f,0.0f}; //TODO: Replace with struct
@@ -280,6 +286,8 @@ int main() {
         //fflush(stdout);
         
         glUniform4fv(sdfPosLocation, numSDF, sdfData);
+        
+        glUniform1iv(sdfMaterialTypeLocation, numSDF, sdfMaterialType);
         
         
         glUniform3f(playerPosLocation, player_pos[0],player_pos[1],player_pos[2]);
