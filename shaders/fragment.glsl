@@ -234,8 +234,13 @@ vec3 sumBounces(vec4 bounceData[16], int numBounces){
 
 float terrainCalc(vec3 p){
     float height = snoise(p.xz) * 0.1;
+    height = 0;
+    
+    for (int octave = 1; octave < 16; octave ++){
+    	height += (snoise(p.xz*octave*0.01f)/octave)*4.0f;
+    }
     // Distance from the point's y-coord to the noise surface
-    return (p.y - (height - 2.0));
+    return (p.y - (height - 4.0));
     }
 
 // The function to march the ray through the noise field
@@ -332,20 +337,23 @@ void main() {
     vec3 normal = vec3(0,0,0);
     
     
+    float view_distance = 50.0f;
+    
+    
     while (travelled < 880.0f){
     	distances = calculateSdfDistances(ray_pos);
     	
     	float dis = calculateSdfDistance(distances);
     	
-    	float floorDis = rayMarchFloor(ray_pos,direction);
+    	float floorDis = rayMarchFloor(ray_pos,direction)*0.2;
     	
 	//floorDis = 1000000;
     	
     	
     	if (dis > floorDis){dis = floorDis;}
     	
-    	if (dis > -(distance(player_pos,ray_pos)-15.0f)){
-    	dis = -(distance(player_pos,ray_pos)-15.0f);
+    	if (dis > -(distance(player_pos,ray_pos)-view_distance)){
+    	dis = -(distance(player_pos,ray_pos)-view_distance);
     	
     	}
     	
@@ -358,7 +366,7 @@ void main() {
 
     	}
     	
-    	if (distance(player_pos,ray_pos) >= 15.0f){
+    	if (distance(player_pos,ray_pos) >= view_distance){
     		collided = true;
     		bounceData[bounce_count] = vec4(0.0,0.0,0.5f,0.0);
     		bounce_count += 1;
@@ -409,10 +417,10 @@ void main() {
     
     
     FragColor = vec4(travelled/64, travelled/64, travelled/64, 1.0);
-    FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
-    FragColor = vec4(normal,1.0);
-    FragColor = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))),1.0);
-    FragColor = vec4(sumBounces(bounceData,bounce_count),1.0);
+    //FragColor = vec4(calculateSdfNormal(distances,ray_pos),1.0);
+    //FragColor = vec4(normal,1.0);
+    //FragColor = vec4(vec3(dot(normal,vec3(1.0f,0.1f,0.1f))),1.0);
+    //FragColor = vec4(sumBounces(bounceData,bounce_count)/(travelled*0.4),1.0);
     }else{
     FragColor = vec4(1.0,0.0,0.0,1.0);
 }
