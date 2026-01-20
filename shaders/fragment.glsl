@@ -152,8 +152,19 @@ float minFunc(float x, float y){
 float calculateSdfDistance(float distances[8]){
 	float dis =  100000;
 	for (int i = 0; i < sdf_count; i++){
+		
 		float dis1 = distances[i];
+		if (sdf_material_type[i] == 3){
+			if (dis1 < 0){
+				dis = 1;
+				return 1.0f;
+			}
+			
+		}else{
 		dis = minFunc(dis,dis1);
+		
+		}
+		
 	}
 	return dis;
 }
@@ -168,7 +179,7 @@ int getSDFMaterial(float distances[8]){
 		float dis1 = distances[i];
 		
 		
-
+		
 		if (dis1<dis){
 		dis = dis1;
 		material = sdf_material_type[i];
@@ -188,6 +199,8 @@ vec3 calculateSdfNormal(float distances[8], vec3 point) {
     for (int i = 0; i < sdf_count; i++) {
         float d = distances[i];
         
+        if (sdf_material_type[i] != 3){
+        
         // Use a power for sharper transitions (Inverse Square Law)
         // This makes the nearest object much more dominant
         float weight = 1.0 / (d * d + epsilon);
@@ -198,6 +211,7 @@ vec3 calculateSdfNormal(float distances[8], vec3 point) {
         // Early exit if we are inside or touching an object
         if (d < epsilon) {
             return sdfSphereNormal(point, sdf_locations[i]);
+        }
         }
     }
     
